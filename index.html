@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hackathon Countdown</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Inter:wght@300;400;600&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #ffffff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 1000px;
+            width: 90%;
+            margin: 0 auto;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .countdown-label {
+            font-family: 'Orbitron', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 30px;
+            color: #4ecdc4;
+            text-shadow: 0 0 20px rgba(78, 205, 196, 0.5);
+        }
+        
+        .countdown-timer {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 2px solid #4ecdc4;
+            border-radius: 30px;
+            padding: 60px 40px;
+            margin: 30px auto;
+            max-width: 600px;
+            width: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .countdown-timer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 200%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(78, 205, 196, 0.1), transparent);
+            animation: shimmer 3s infinite;
+        }
+        
+        .countdown-display {
+            font-family: 'Orbitron', monospace;
+            font-size: 4.5rem;
+            font-weight: 900;
+            color: #4ecdc4;
+            margin: 0;
+            text-shadow: 0 0 30px rgba(78, 205, 196, 0.8);
+            letter-spacing: 0.1em;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .time-units {
+            font-family: 'Inter', sans-serif;
+            font-size: 1.2rem;
+            color: #a0a0a0;
+            margin-top: 15px;
+            letter-spacing: 0.2em;
+            position: relative;
+            z-index: 2;
+        }
+        
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 2px;
+            height: 2px;
+            background: #4ecdc4;
+            border-radius: 50%;
+            animation: float 6s linear infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(-100px) rotate(360deg); opacity: 0; }
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.02); }
+        }
+        
+        .pulse {
+            animation: pulse 2s ease-in-out infinite;
+        }
+        
+        @media (max-width: 768px) {
+            .countdown-label { font-size: 2rem; }
+            .countdown-display { font-size: 3rem; }
+            .container { padding: 20px; }
+            .countdown-timer { padding: 40px 20px; }
+        }
+        
+        @media (max-width: 480px) {
+            .countdown-label { font-size: 1.5rem; }
+            .countdown-display { font-size: 2rem; }
+            .time-units { font-size: 1rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="particles" id="particles"></div>
+    
+    <div class="container">
+        <div class="countdown-label">Time Remaining:</div>
+        
+        <div class="countdown-timer pulse">
+            <div class="countdown-display" id="countdownDisplay">--:--:--</div>
+            <div class="time-units">HOURS : MINUTES : SECONDS</div>
+        </div>
+    </div>
+
+    <script>
+        let countdownInterval;
+
+        // Create floating particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            for (let i = 0; i < 50; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDelay = Math.random() * 6 + 's';
+                particle.style.animationDuration = (3 + Math.random() * 3) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        function getTargetTime() {
+            const now = new Date();
+            
+            // Create target time for 5:30 PM AEST today
+            const target = new Date();
+            target.setHours(17, 30, 0, 0); // 5:30 PM
+            
+            // Convert to AEST (UTC+10 or UTC+11 depending on daylight saving)
+            // For simplicity, using UTC+10 (you can adjust if needed)
+            const aestOffset = 10 * 60; // 10 hours in minutes
+            const localOffset = now.getTimezoneOffset(); // Local timezone offset in minutes
+            const offsetDifference = aestOffset + localOffset;
+            
+            target.setMinutes(target.getMinutes() - offsetDifference);
+            
+            // If target time has passed today, set it for tomorrow
+            if (target.getTime() <= now.getTime()) {
+                target.setDate(target.getDate() + 1);
+            }
+            
+            return target;
+        }
+
+        function startCountdown() {
+            const countdownDisplay = document.getElementById('countdownDisplay');
+            const targetTime = getTargetTime();
+            
+            countdownInterval = setInterval(() => {
+                const now = new Date().getTime();
+                const distance = targetTime.getTime() - now;
+                
+                if (distance < 0) {
+                    clearInterval(countdownInterval);
+                    countdownDisplay.innerHTML = "TIME'S UP!";
+                    countdownDisplay.style.color = "#ff6b6b";
+                    countdownDisplay.style.textShadow = "0 0 30px rgba(255, 107, 107, 0.8)";
+                    return;
+                }
+                
+                const hours = Math.floor(distance / (1000 * 60 * 60));
+                const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                
+                countdownDisplay.innerHTML = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            }, 1000);
+        }
+
+        // Initialize
+        createParticles();
+        startCountdown();
+    </script>
+</body>
+</html> 
